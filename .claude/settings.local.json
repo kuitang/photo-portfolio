@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/resize_images.sh:*)",
+      "Bash(./scripts/build.sh:*)",
+      "Bash(python3:*)",
+      "Bash(cat:*)",
+      "Bash(./test_build.sh)",
+      "Bash(./test_build.sh:*)",
+      "Bash(timeout 10 ./test_build.sh:*)",
+      "Bash(./simple_test.sh)",
+      "Bash(./test_csv_validation.sh:*)",
+      "Bash(timeout:*)",
+      "Bash(./demo_csv_validation.sh:*)"
+    ],
+    "deny": []
+  }
+}

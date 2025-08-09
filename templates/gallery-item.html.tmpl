@@ -1,0 +1,23 @@
+<article class="gallery-item" data-tags="$ITEM_TAGS" data-year="$ITEM_YEAR">
+    <a href="$ITEM_URL" class="gallery-link">
+        <div class="gallery-image">
+            <picture>
+                <source media="(max-width: 414px)" 
+                        srcset="$BASE_PATH/resized/thumb/$ITEM_FILENAME 1x,
+                                $BASE_PATH/resized/small/$ITEM_FILENAME 2x">
+                <source media="(min-width: 415px)" 
+                        srcset="$BASE_PATH/resized/small/$ITEM_FILENAME 1x,
+                                $BASE_PATH/resized/medium/$ITEM_FILENAME 2x">
+                <img src="$BASE_PATH/resized/thumb/$ITEM_FILENAME" 
+                     alt="$ITEM_TITLE" 
+                     loading="lazy"
+                     width="300"
+                     height="300">
+            </picture>
+        </div>
+        <div class="gallery-info">
+            <h3 class="gallery-item-title">$ITEM_TITLE</h3>
+            <p class="gallery-item-meta">$ITEM_LOCATION</p>
+        </div>
+    </a>
+</article>

@@ -1,0 +1,38 @@
+<div class="page-header">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+                <li><a href="$BASE_PATH/index.html">Home</a></li>
+                <li><span aria-current="page">$GALLERY_TITLE</span></li>
+            </ol>
+        </nav>
+        <h1 class="page-title">$GALLERY_TITLE</h1>
+        <p class="page-description">$GALLERY_DESCRIPTION</p>
+    </div>
+</div>
+
+<section class="gallery-section">
+    <div class="container">
+        <div class="gallery-controls">
+            <div class="filter-tags">
+                $FILTER_TAGS
+            </div>
+            <div class="sort-options">
+                <label for="sort-select" class="visually-hidden">Sort by</label>
+                <select id="sort-select" class="sort-select">
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="title">Title</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="gallery-grid" id="gallery-grid">
+            $GALLERY_ITEMS
+        </div>
+        
+        <div class="pagination">
+            $PAGINATION
+        </div>
+    </div>
+</section>

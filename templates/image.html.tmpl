@@ -1,0 +1,95 @@
+<div class="image-viewer">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+                <li><a href="$BASE_PATH/index.html">Home</a></li>
+                <li><a href="$BASE_PATH/gallery.html">Gallery</a></li>
+                <li><a href="$CATEGORY_URL">$IMAGE_CATEGORY</a></li>
+                <li><span aria-current="page">$IMAGE_TITLE</span></li>
+            </ol>
+        </nav>
+        
+        <div class="image-navigation">
+            <a href="$PREV_IMAGE_URL" class="nav-button prev" aria-label="Previous image">
+                <span class="arrow">&larr;</span>
+                <span class="nav-text">Previous</span>
+            </a>
+            <a href="$BASE_PATH/gallery.html" class="nav-button back">
+                <span class="nav-text">Back to Gallery</span>
+            </a>
+            <a href="$NEXT_IMAGE_URL" class="nav-button next" aria-label="Next image">
+                <span class="nav-text">Next</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </div>
+        
+        <div class="image-container">
+            <picture class="main-image">
+                <source media="(max-width: 414px)" 
+                        srcset="$BASE_PATH/resized/small/$IMAGE_FILENAME 1x,
+                                $BASE_PATH/resized/medium/$IMAGE_FILENAME 2x,
+                                $BASE_PATH/resized/large/$IMAGE_FILENAME 3x">
+                <source media="(max-width: 768px)" 
+                        srcset="$BASE_PATH/resized/medium/$IMAGE_FILENAME 1x,
+                                $BASE_PATH/resized/large/$IMAGE_FILENAME 2x">
+                <source media="(max-width: 1024px)" 
+                        srcset="$BASE_PATH/resized/large/$IMAGE_FILENAME 1x,
+                                $BASE_PATH/resized/xlarge/$IMAGE_FILENAME 2x">
+                <source media="(min-width: 1025px)" 
+                        srcset="$BASE_PATH/resized/xlarge/$IMAGE_FILENAME 1x,
+                                $BASE_PATH/originals/$IMAGE_FILENAME 2x">
+                <img src="$BASE_PATH/resized/large/$IMAGE_FILENAME" 
+                     alt="$IMAGE_TITLE" 
+                     loading="eager">
+            </picture>
+        </div>
+        
+        <div class="image-details">
+            <div class="details-header">
+                <h1 class="image-title">$IMAGE_TITLE</h1>
+                <span class="image-year">$IMAGE_YEAR</span>
+            </div>
+            
+            <div class="details-content">
+                <div class="description">
+                    <p>$IMAGE_DESCRIPTION</p>
+                </div>
+                
+                <div class="metadata">
+                    <h2 class="metadata-title">Technical Details</h2>
+                    <dl class="metadata-list">
+                        <dt>Location</dt>
+                        <dd>$IMAGE_LOCATION</dd>
+                        
+                        <dt>Camera</dt>
+                        <dd>$IMAGE_CAMERA</dd>
+                        
+                        <dt>Lens</dt>
+                        <dd>$IMAGE_LENS</dd>
+                        
+                        <dt>Film</dt>
+                        <dd>$IMAGE_FILM</dd>
+                        
+                        <dt>Developer</dt>
+                        <dd>$IMAGE_DEVELOPER</dd>
+                    </dl>
+                </div>
+                
+                <div class="tags">
+                    <h2 class="tags-title">Tags</h2>
+                    <ul class="tag-list">
+                        $IMAGE_TAGS
+                    </ul>
+                </div>
+                
+                <div class="actions">
+                    <a href="$BASE_PATH/originals/$IMAGE_FILENAME" 
+                       class="button button-primary" 
+                       download="$IMAGE_FILENAME">
+                        Download Original
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
