@@ -13,8 +13,7 @@ STATIC_DIR="static"
 CSV_FILE="$ORIGINALS_DIR/metadata.csv"
 
 # Site configuration
-export SITE_TITLE="Photography Portfolio"
-export SITE_DESCRIPTION="A collection of photographic works"
+export SITE_TITLE="Kui Tang Photo"
 export BASE_PATH="."
 export CURRENT_YEAR=$(date +%Y)
 
@@ -70,6 +69,22 @@ format_year() {
     echo "$1"
 }
 
+# Function to combine location and year
+format_location_year() {
+    local location="$1"
+    local year="$2"
+    
+    if [ -n "$location" ] && [ -n "$year" ]; then
+        echo "$(escape_html "$location"), $year"
+    elif [ -n "$location" ]; then
+        echo "$(escape_html "$location")"
+    elif [ -n "$year" ]; then
+        echo "$year"
+    else
+        echo ""
+    fi
+}
+
 # Function to generate navigation items
 generate_navigation() {
     local categories=$(tail -n +2 "$CSV_FILE" | cut -d',' -f11 | sort -u | grep -v '^$')
@@ -103,6 +118,9 @@ create_gallery_item() {
     export ITEM_YEAR="$year"
     export ITEM_TAGS="$tags"
     
+    # Generate location-year combination for gallery items
+    export ITEM_LOCATION_YEAR="$(format_location_year "$location" "$year")"
+    
     envsubst < "$TEMPLATES_DIR/gallery-item.html.tmpl"
 }
 
@@ -110,6 +128,7 @@ create_gallery_item() {
 declare -a ALL_IMAGES=()
 declare -A IMAGE_DATA=()
 declare -A CATEGORIES=()
+declare -A TAGS=()
 
 # Read CSV and store data
 print_status "Reading metadata..."
@@ -138,6 +157,17 @@ while IFS=',' read -r filename title year location camera lens film developer de
     # Track categories
     if [ -n "$category" ]; then
         CATEGORIES["$category"]+="$key "
+    fi
+    
+    # Track tags
+    if [ -n "$tags" ]; then
+        IFS=' ' read -ra TAG_ARRAY <<< "$tags"
+        for tag in "${TAG_ARRAY[@]}"; do
+            tag=$(echo "$tag" | xargs) # Trim whitespace
+            if [ -n "$tag" ]; then
+                TAGS["$tag"]+="$key "
+            fi
+        done
     fi
 done < "$CSV_FILE"
 
@@ -181,16 +211,22 @@ for i in "${!ALL_IMAGES[@]}"; do
     export IMAGE_DEVELOPER="$(escape_html "${IMAGE_DATA["${key}_developer"]}")"
     export IMAGE_CATEGORY="$(escape_html "${IMAGE_DATA["${key}_category"]}")"
     
-    # Generate tags HTML (space-delimited)
+    # Generate tags HTML with clickable links
     tags_html=""
     IFS=' ' read -ra TAGS_ARRAY <<< "${IMAGE_DATA["${key}_tags"]}"
     for tag in "${TAGS_ARRAY[@]}"; do
         tag=$(echo "$tag" | xargs) # Trim whitespace
         if [ -n "$tag" ]; then
-            tags_html="$tags_html<li>$(escape_html "$tag")</li>"
+            tag_slug=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+            tags_html="$tags_html<li><a href=\"$BASE_PATH/tag-$tag_slug.html\">$(escape_html "$tag")</a></li>"
         fi
     done
     export IMAGE_TAGS="$tags_html"
+    
+    # Generate location-year combination
+    location="${IMAGE_DATA["${key}_location"]}"
+    year="${IMAGE_DATA["${key}_year"]}"
+    export IMAGE_LOCATION_YEAR="$(format_location_year "$location" "$year")"
     
     # Set navigation URLs
     if [ -n "$prev_key" ]; then
@@ -213,6 +249,9 @@ for i in "${!ALL_IMAGES[@]}"; do
         export CATEGORY_URL="$BASE_PATH/gallery.html"
     fi
     
+    # Add JavaScript for keyboard navigation on image pages
+    export ADDITIONAL_SCRIPTS='<script src="'$BASE_PATH'/image-nav.js"></script>'
+    
     # Generate image page content
     export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/image.html.tmpl")
     
@@ -225,12 +264,13 @@ done
 # Reset BASE_PATH for root-level pages
 export BASE_PATH="."
 
+# Clear additional scripts for non-image pages
+export ADDITIONAL_SCRIPTS=""
+
 # Generate main gallery page
 print_status "Generating main gallery page..."
 export PAGE_TITLE="Gallery"
 export GALLERY_TITLE="All Photos"
-export GALLERY_DESCRIPTION="Browse the complete collection"
-export PAGE_DESCRIPTION="$GALLERY_DESCRIPTION"
 # Handle empty array case
 if [ ${#ALL_IMAGES[@]} -gt 0 ]; then
     export OG_IMAGE="$BASE_PATH/resized/large/${IMAGE_DATA["${ALL_IMAGES[0]}_filename"]}"
@@ -253,7 +293,6 @@ export GALLERY_ITEMS
 
 # Simple pagination (placeholder)
 export PAGINATION='<span class="current">1</span>'
-export FILTER_TAGS=""
 
 export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/gallery.html.tmpl")
 envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/gallery.html"
@@ -264,8 +303,6 @@ for category in "${!CATEGORIES[@]}"; do
     category_slug=$(echo "$category" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
     export PAGE_TITLE="$category"
     export GALLERY_TITLE="$category"
-    export GALLERY_DESCRIPTION="Photos in the $category category"
-    export PAGE_DESCRIPTION="$GALLERY_DESCRIPTION"
     
     # Generate gallery items for this category
     GALLERY_ITEMS=""
@@ -285,10 +322,34 @@ for category in "${!CATEGORIES[@]}"; do
     echo "  → Generated: gallery-${category_slug}.html"
 done
 
+# Generate tag galleries
+print_status "Generating tag galleries..."
+for tag in "${!TAGS[@]}"; do
+    tag_slug=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    export PAGE_TITLE="$tag"
+    export GALLERY_TITLE="$tag"
+    
+    # Generate gallery items for this tag
+    GALLERY_ITEMS=""
+    for key in ${TAGS["$tag"]}; do
+        GALLERY_ITEMS="$GALLERY_ITEMS$(create_gallery_item \
+            "${IMAGE_DATA["${key}_filename"]}" \
+            "${IMAGE_DATA["${key}_title"]}" \
+            "${IMAGE_DATA["${key}_location"]}" \
+            "${IMAGE_DATA["${key}_year"]}" \
+            "${IMAGE_DATA["${key}_tags"]}")"
+    done
+    export GALLERY_ITEMS
+    
+    export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/gallery.html.tmpl")
+    envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/tag-${tag_slug}.html"
+    
+    echo "  → Generated: tag-${tag_slug}.html"
+done
+
 # Generate index page
 print_status "Generating index page..."
 export PAGE_TITLE="Home"
-export PAGE_DESCRIPTION="$SITE_DESCRIPTION"
 # Handle empty array case
 if [ ${#ALL_IMAGES[@]} -gt 0 ]; then
     export OG_IMAGE="$BASE_PATH/resized/large/${IMAGE_DATA["${ALL_IMAGES[0]}_filename"]}"
@@ -312,38 +373,6 @@ for i in {0..5}; do
 done
 export FEATURED_IMAGES
 
-# Recent images (last 9)
-RECENT_IMAGES=""
-start_idx=$((${#ALL_IMAGES[@]} - 9))
-if [ $start_idx -lt 0 ]; then
-    start_idx=0
-fi
-for ((i=${#ALL_IMAGES[@]}-1; i>=start_idx; i--)); do
-    if [ $i -ge 0 ]; then
-        key="${ALL_IMAGES[$i]}"
-        RECENT_IMAGES="$RECENT_IMAGES$(create_gallery_item \
-            "${IMAGE_DATA["${key}_filename"]}" \
-            "${IMAGE_DATA["${key}_title"]}" \
-            "${IMAGE_DATA["${key}_location"]}" \
-            "${IMAGE_DATA["${key}_year"]}" \
-            "${IMAGE_DATA["${key}_tags"]}")"
-    fi
-done
-export RECENT_IMAGES
-
-# Category links
-CATEGORY_LINKS=""
-for category in "${!CATEGORIES[@]}"; do
-    category_slug=$(echo "$category" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-    count=$(echo "${CATEGORIES["$category"]}" | wc -w)
-    CATEGORY_LINKS="$CATEGORY_LINKS"'<div class="category-card">
-        <a href="'$BASE_PATH'/gallery-'$category_slug'.html">
-            <h3 class="category-name">'$category'</h3>
-            <p class="category-count">'$count' photos</p>
-        </a>
-    </div>'
-done
-export CATEGORY_LINKS
 
 export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/index.html.tmpl")
 envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/index.html"
