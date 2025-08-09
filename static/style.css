@@ -156,12 +156,14 @@ section {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    align-items: start;
 }
 
 .featured-grid {
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     max-width: 1200px;
     margin: 0 auto 2rem;
+    align-items: start;
 }
 
 .gallery-item {
@@ -183,17 +185,13 @@ section {
 .gallery-image {
     position: relative;
     width: 100%;
-    padding-bottom: 100%;
     overflow: hidden;
 }
 
 .gallery-image img {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    display: block;
 }
 
 .gallery-info {
@@ -249,18 +247,13 @@ section {
 }
 
 .nav-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid #e0e0e0;
+    display: inline;
     font-size: 0.875rem;
-    transition: background-color 0.2s ease;
+    text-decoration: underline;
 }
 
 .nav-button:hover {
-    background-color: #f5f5f5;
-    opacity: 1;
+    opacity: 0.7;
 }
 
 .nav-button.prev {
@@ -293,6 +286,8 @@ section {
 .main-image img {
     width: 100%;
     height: auto;
+    max-height: 85vh;
+    object-fit: contain;
     display: block;
 }
 
@@ -474,13 +469,25 @@ footer {
     }
     
     .image-navigation {
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 1rem;
+        justify-content: center;
+    }
+    
+    .nav-button.prev {
+        margin-right: 0;
+    }
+    
+    .nav-button.next {
+        margin-left: 0;
     }
     
     .nav-button.back {
         position: static;
         transform: none;
+        order: -1;
+        width: 100%;
+        text-align: center;
     }
     
     .metadata-list {
