@@ -3,58 +3,17 @@
 # Image resizing script using ImageMagick
 # Processes images from originals/ and creates multiple sizes in resized/
 
-set -e
+# Source common library
+source "$(dirname "$0")/common.sh"
 
-# Configuration
-ORIGINALS_DIR="originals"
-RESIZED_DIR="resized"
-QUALITY=85
+# Ensure we're in the project root
+ensure_project_root
 
-# Size definitions - ensure high resolution for mobile devices
-declare -A SIZES=(
-    ["thumb"]="600x1080"
-    ["small"]="1200x1080"
-    ["medium"]="1800x1600"
-    ["large"]="2400x1800"
-    ["xlarge"]="3200x2400"
-)
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-# Check if ImageMagick is installed
-if ! command -v convert &> /dev/null; then
-    print_error "ImageMagick is not installed. Please install it first."
-    echo "On Ubuntu/Debian: sudo apt-get install imagemagick"
-    echo "On macOS: brew install imagemagick"
-    echo "On RHEL/CentOS: sudo yum install ImageMagick"
-    exit 1
-fi
-
-# Check if originals directory exists
-if [ ! -d "$ORIGINALS_DIR" ]; then
-    print_error "Directory $ORIGINALS_DIR does not exist."
-    exit 1
-fi
+# Validation is now handled by build.sh, but we still check basic requirements
+check_directory "$ORIGINALS_DIR" "Directory $ORIGINALS_DIR does not exist."
 
 # Count images to process
-IMAGE_COUNT=$(find "$ORIGINALS_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) | wc -l)
+IMAGE_COUNT=$(count_images)
 
 if [ "$IMAGE_COUNT" -eq 0 ]; then
     print_warning "No JPEG images found in $ORIGINALS_DIR"
@@ -86,8 +45,8 @@ while read -r IMAGE; do
     HEIGHT=$(echo $DIMENSIONS | cut -d'x' -f2)
     
     # Process each size
-    for SIZE_NAME in "${!SIZES[@]}"; do
-        SIZE_VALUE="${SIZES[$SIZE_NAME]}"
+    for SIZE_NAME in "${!IMAGE_SIZES[@]}"; do
+        SIZE_VALUE="${IMAGE_SIZES[$SIZE_NAME]}"
         OUTPUT_DIR="$RESIZED_DIR/$SIZE_NAME"
         OUTPUT_FILE="$OUTPUT_DIR/$BASENAME"
         
@@ -106,7 +65,7 @@ while read -r IMAGE; do
         convert "$IMAGE" \
             -auto-orient \
             -resize "$SIZE_VALUE>" \
-            -quality "$QUALITY" \
+            -quality "$IMAGE_QUALITY" \
             -strip \
             -interlace Plane \
             -sampling-factor 4:2:0 \
@@ -136,6 +95,6 @@ fi
 echo "================================"
 
 # Set proper permissions
-chmod -R 755 "$RESIZED_DIR"
+set_web_permissions "$RESIZED_DIR"
 
 exit 0

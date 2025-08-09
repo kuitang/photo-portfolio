@@ -3,52 +3,19 @@
 # HTML generation script using envsubst for templating
 # Reads metadata.csv and generates static HTML pages
 
-set -e
+# Source common library
+source "$(dirname "$0")/common.sh"
 
-# Configuration
-ORIGINALS_DIR="originals"
-TEMPLATES_DIR="templates"
-BUILD_DIR="build"
-STATIC_DIR="static"
-CSV_FILE="$ORIGINALS_DIR/metadata.csv"
+# Ensure we're in the project root
+ensure_project_root
 
-# Site configuration
-export SITE_TITLE="kui.tang.photo"
+# Export site configuration for templates
+export SITE_TITLE
+export CURRENT_YEAR
 export BASE_PATH="."
-export CURRENT_YEAR=$(date +%Y)
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-# Functions
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-# Check if CSV exists
-if [ ! -f "$CSV_FILE" ]; then
-    print_error "Metadata file $CSV_FILE not found"
-    exit 1
-fi
-
-# Check if envsubst is available
-if ! command -v envsubst &> /dev/null; then
-    print_error "envsubst is not installed. Please install gettext package."
-    echo "On Ubuntu/Debian: sudo apt-get install gettext"
-    echo "On macOS: brew install gettext"
-    exit 1
-fi
+# Validation is now handled by build.sh, but we still check basic requirements
+check_file "$CSV_FILE" "Metadata file $CSV_FILE not found"
 
 # Clean and create build directory
 print_status "Preparing build directory..."
@@ -57,12 +24,9 @@ mkdir -p "$BUILD_DIR/images"
 
 # Copy static assets
 print_status "Copying static assets..."
-cp -r "$STATIC_DIR"/* "$BUILD_DIR/" 2>/dev/null || true
+cp -r "static"/* "$BUILD_DIR/" 2>/dev/null || true
 
-# Function to escape HTML
-escape_html() {
-    echo "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g'
-}
+# escape_html is now provided by common.sh
 
 # Function to format year (just pass through as string)
 format_year() {
@@ -90,12 +54,12 @@ generate_navigation() {
     local categories=$(tail -n +2 "$CSV_FILE" | cut -d',' -f11 | sort -u | grep -v '^$')
     local nav_items=""
     
-    nav_items='<li><a href="'$BASE_PATH'/gallery.html">All Photos</a></li>'
+    nav_items='<li><a href="'"$BASE_PATH"'/gallery.html">All Photos</a></li>'
     
     while IFS= read -r category; do
         if [ -n "$category" ]; then
-            category_slug=$(echo "$category" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-            nav_items="$nav_items"'<li><a href="'$BASE_PATH'/gallery-'$category_slug'.html">'$category'</a></li>'
+            category_slug=$(to_slug "$category")
+            nav_items="$nav_items"'<li><a href="'"$BASE_PATH"'/gallery-'"$category_slug"'.html">'"$category"'</a></li>'
         fi
     done <<< "$categories"
     
@@ -121,7 +85,7 @@ create_gallery_item() {
     # Generate location-year combination for gallery items
     export ITEM_LOCATION_YEAR="$(format_location_year "$location" "$year")"
     
-    envsubst < "$TEMPLATES_DIR/gallery-item.html.tmpl"
+    envsubst < "templates/gallery-item.html.tmpl"
 }
 
 # Arrays to store image data
@@ -217,7 +181,7 @@ for i in "${!ALL_IMAGES[@]}"; do
     for tag in "${TAGS_ARRAY[@]}"; do
         tag=$(echo "$tag" | xargs) # Trim whitespace
         if [ -n "$tag" ]; then
-            tag_slug=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+            tag_slug=$(to_slug "$tag")
             tags_html="$tags_html<li><a href=\"$BASE_PATH/tag-$tag_slug.html\">$(escape_html "$tag")</a></li>"
         fi
     done
@@ -243,7 +207,7 @@ for i in "${!ALL_IMAGES[@]}"; do
     
     # Handle empty category field
     if [ -n "${IMAGE_DATA["${key}_category"]}" ]; then
-        category_slug=$(echo "${IMAGE_DATA["${key}_category"]}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+        category_slug=$(to_slug "${IMAGE_DATA["${key}_category"]}")
         export CATEGORY_URL="$BASE_PATH/gallery-${category_slug}.html"
     else
         export CATEGORY_URL="$BASE_PATH/gallery.html"
@@ -253,10 +217,10 @@ for i in "${!ALL_IMAGES[@]}"; do
     export ADDITIONAL_SCRIPTS='<script src="'$BASE_PATH'/image-nav.js"></script>'
     
     # Generate image page content
-    export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/image.html.tmpl")
+    export MAIN_CONTENT=$(envsubst < "templates/image.html.tmpl")
     
     # Generate full page
-    envsubst < "$TEMPLATES_DIR/base.html" > "$output_file"
+    envsubst < "templates/base.html" > "$output_file"
     
     echo "  → Generated: images/${key}.html"
 done
@@ -294,13 +258,13 @@ export GALLERY_ITEMS
 # Simple pagination (placeholder)
 export PAGINATION='<span class="current">1</span>'
 
-export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/gallery.html.tmpl")
-envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/gallery.html"
+export MAIN_CONTENT=$(envsubst < "templates/gallery.html.tmpl")
+envsubst < "templates/base.html" > "$BUILD_DIR/gallery.html"
 
 # Generate category galleries
 print_status "Generating category galleries..."
 for category in "${!CATEGORIES[@]}"; do
-    category_slug=$(echo "$category" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    category_slug=$(to_slug "$category")
     export PAGE_TITLE="$category"
     export GALLERY_TITLE="$category"
     
@@ -316,8 +280,8 @@ for category in "${!CATEGORIES[@]}"; do
     done
     export GALLERY_ITEMS
     
-    export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/gallery.html.tmpl")
-    envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/gallery-${category_slug}.html"
+    export MAIN_CONTENT=$(envsubst < "templates/gallery.html.tmpl")
+    envsubst < "templates/base.html" > "$BUILD_DIR/gallery-${category_slug}.html"
     
     echo "  → Generated: gallery-${category_slug}.html"
 done
@@ -325,7 +289,7 @@ done
 # Generate tag galleries
 print_status "Generating tag galleries..."
 for tag in "${!TAGS[@]}"; do
-    tag_slug=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    tag_slug=$(to_slug "$tag")
     export PAGE_TITLE="$tag"
     export GALLERY_TITLE="$tag"
     
@@ -341,8 +305,8 @@ for tag in "${!TAGS[@]}"; do
     done
     export GALLERY_ITEMS
     
-    export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/gallery.html.tmpl")
-    envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/tag-${tag_slug}.html"
+    export MAIN_CONTENT=$(envsubst < "templates/gallery.html.tmpl")
+    envsubst < "templates/base.html" > "$BUILD_DIR/tag-${tag_slug}.html"
     
     echo "  → Generated: tag-${tag_slug}.html"
 done
@@ -374,8 +338,8 @@ done
 export FEATURED_IMAGES
 
 
-export MAIN_CONTENT=$(envsubst < "$TEMPLATES_DIR/index.html.tmpl")
-envsubst < "$TEMPLATES_DIR/base.html" > "$BUILD_DIR/index.html"
+export MAIN_CONTENT=$(envsubst < "templates/index.html.tmpl")
+envsubst < "templates/base.html" > "$BUILD_DIR/index.html"
 
 print_status "HTML generation complete!"
 echo "  → Generated ${#ALL_IMAGES[@]} image pages"

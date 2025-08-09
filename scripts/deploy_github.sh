@@ -3,55 +3,19 @@
 # GitHub deployment script
 # Copies build output to separate git repository and pushes to GitHub
 
-set -e
+# Source common library
+source "$(dirname "$0")/common.sh"
 
-# Configuration
-BUILD_DIR="build"
-DEPLOY_DIR="../photos_website"
+# Ensure we're in the project root
+ensure_project_root
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+print_section_header "Photography Portfolio - GitHub Deployment"
 
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+# Check directories and git repository
+check_directory "$BUILD_DIR" "Build directory '$BUILD_DIR' does not exist. Please run './scripts/build.sh' first to generate the site."
+check_directory "$DEPLOY_DIR" "Deployment directory '$DEPLOY_DIR' does not exist. Please ensure the photos_website repository is cloned at '../photos_website'"
 
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_header() {
-    echo -e "${BLUE}[DEPLOY]${NC} $1"
-}
-
-print_header "Photography Portfolio - GitHub Deployment"
-echo "========================================================"
-
-# Check if build directory exists
-if [ ! -d "$BUILD_DIR" ]; then
-    print_error "Build directory '$BUILD_DIR' does not exist."
-    print_error "Please run './scripts/build.sh' first to generate the site."
-    exit 1
-fi
-
-# Check if deployment directory exists
-if [ ! -d "$DEPLOY_DIR" ]; then
-    print_error "Deployment directory '$DEPLOY_DIR' does not exist."
-    print_error "Please ensure the photos_website repository is cloned at '../photos_website'"
-    exit 1
-fi
-
-# Check if deployment directory is a git repository
-if [ ! -d "$DEPLOY_DIR/.git" ]; then
+if ! check_git_repo "$DEPLOY_DIR"; then
     print_error "Deployment directory '$DEPLOY_DIR' is not a git repository."
     exit 1
 fi
@@ -60,17 +24,12 @@ print_status "Checking deployment repository status..."
 cd "$DEPLOY_DIR"
 
 # Check for uncommitted changes
-if ! git diff --quiet || ! git diff --staged --quiet; then
-    print_warning "Deployment repository has uncommitted changes."
-    print_warning "Current status:"
+if ! check_git_clean "$DEPLOY_DIR"; then
+    print_error "Deployment repository has uncommitted changes."
+    print_error "Current status:"
     git status --short
-    echo ""
-    read -p "Continue with deployment? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_error "Deployment cancelled."
-        exit 1
-    fi
+    print_error "Please commit or stash changes before deploying."
+    exit 1
 fi
 
 # Go back to source directory
@@ -86,9 +45,7 @@ print_status "Copying files (dereferencing symlinks)..."
 cp -rL "$BUILD_DIR"/* "$DEPLOY_DIR"/
 
 # Ensure proper permissions
-chmod -R 755 "$DEPLOY_DIR"
-find "$DEPLOY_DIR" -type f -name "*.html" -o -name "*.css" -o -name "*.js" | xargs chmod 644
-find "$DEPLOY_DIR" -type f -name "*.jpg" -o -name "*.png" -o -name "*.gif" | xargs chmod 644
+set_web_permissions "$DEPLOY_DIR"
 
 print_status "Files copied successfully"
 
@@ -137,7 +94,7 @@ fi
 # Get the repository URL for user reference
 REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's/git@github\.com:/https:\/\/github.com\//')
 
-print_header "Deployment Complete! 🎉"
+print_section_header "Deployment Complete! 🎉"
 echo ""
 print_status "Your photography portfolio has been deployed to GitHub."
 if [ -n "$REPO_URL" ]; then
