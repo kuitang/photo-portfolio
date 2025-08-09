@@ -10,13 +10,13 @@ ORIGINALS_DIR="originals"
 RESIZED_DIR="resized"
 QUALITY=85
 
-# Size definitions
+# Size definitions - ensure high resolution for mobile devices
 declare -A SIZES=(
-    ["thumb"]="300x300^"
-    ["small"]="600x"
-    ["medium"]="1200x"
-    ["large"]="1920x"
-    ["xlarge"]="2880x"
+    ["thumb"]="600x1080"
+    ["small"]="1200x1080"
+    ["medium"]="1800x1600"
+    ["large"]="2400x1800"
+    ["xlarge"]="3200x2400"
 )
 
 # Colors for output
@@ -102,28 +102,15 @@ while read -r IMAGE; do
         
         echo -n "  → Creating $SIZE_NAME version... "
         
-        if [ "$SIZE_NAME" = "thumb" ]; then
-            # For thumbnails, create square crops
-            convert "$IMAGE" \
-                -auto-orient \
-                -thumbnail "$SIZE_VALUE" \
-                -gravity center \
-                -extent 300x300 \
-                -quality "$QUALITY" \
-                -strip \
-                -interlace Plane \
-                "$OUTPUT_FILE" 2>/dev/null
-        else
-            # For other sizes, maintain aspect ratio
-            convert "$IMAGE" \
-                -auto-orient \
-                -resize "$SIZE_VALUE" \
-                -quality "$QUALITY" \
-                -strip \
-                -interlace Plane \
-                -sampling-factor 4:2:0 \
-                "$OUTPUT_FILE" 2>/dev/null
-        fi
+        # All sizes maintain aspect ratio with minimum 1080px vertical resolution
+        convert "$IMAGE" \
+            -auto-orient \
+            -resize "$SIZE_VALUE>" \
+            -quality "$QUALITY" \
+            -strip \
+            -interlace Plane \
+            -sampling-factor 4:2:0 \
+            "$OUTPUT_FILE" 2>/dev/null
         
         if [ $? -eq 0 ]; then
             echo "done"

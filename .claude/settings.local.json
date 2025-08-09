@@ -13,7 +13,9 @@
       "Bash(./simple_test.sh)",
       "Bash(./test_csv_validation.sh:*)",
       "Bash(timeout:*)",
-      "Bash(./demo_csv_validation.sh:*)"
+      "Bash(./demo_csv_validation.sh:*)",
+      "Bash(curl:*)",
+      "Bash(./scripts/deploy_github.sh:*)"
     ],
     "deny": []
   }

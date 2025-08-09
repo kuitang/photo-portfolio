@@ -164,7 +164,23 @@ Then open http://localhost:8000 in your browser.
 
 The `build/` directory contains your complete static website. Deploy it to any static hosting service:
 
-### GitHub Pages
+### GitHub Pages (Automated)
+Use the included deployment script to automatically publish to GitHub:
+
+```bash
+./scripts/deploy_github.sh
+```
+
+This script will:
+1. Copy all build files to `../photos_website` directory (dereferencing symlinks)
+2. Create an automated commit with photo/page counts
+3. Push to GitHub automatically
+
+**Prerequisites:**
+- Clone your GitHub Pages repository to `../photos_website` 
+- Ensure the repository has a configured remote origin
+
+### GitHub Pages (Manual)
 ```bash
 # Copy build contents to your github.io repository
 cp -r build/* /path/to/username.github.io/
@@ -249,7 +265,8 @@ photos/
 ├── scripts/                # Build scripts
 │   ├── build.sh           # Main build orchestrator
 │   ├── resize_images.sh   # Image processing
-│   └── generate_html.sh   # HTML generation
+│   ├── generate_html.sh   # HTML generation
+│   └── deploy_github.sh   # GitHub deployment
 ├── build/                  # Generated static site
 └── CLAUDE.md              # Technical documentation
 ```

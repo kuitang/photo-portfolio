@@ -5,17 +5,18 @@
 ### Visual Design
 - **Background**: Pure white (#FFFFFF)
 - **Typography**: 
-  - Font family: Helvetica, Arial, sans-serif
+  - Font family: 'Helvetica Neue', Helvetica, Arial, sans-serif
   - Text colors: Black (#000000) for primary text, Grey (#666666) for secondary
-  - Text style: Small caps for headers and navigation
+  - Text style: Lowercase/uppercase via CSS transform for consistent branding
   - Font sizes: Responsive scaling (16px base, 14px mobile)
 - **Layout**:
-  - Minimal grid-based gallery layout
+  - Minimal grid-based gallery layout with mixed aspect ratios
   - Single image view with metadata display
   - Responsive breakpoints: 320px, 768px, 1024px, 1440px, 2560px
 - **Navigation**: 
   - Top navigation bar with portfolio sections
-  - Previous/Next navigation for single image view
+  - Minimal underlined text links for image navigation (no button styling)
+  - Mobile-responsive navigation that wraps and centers
   - Breadcrumb navigation
 
 ### Responsive Image Strategy
@@ -26,11 +27,13 @@
   - Special handling for Apple Retina displays using srcset and sizes attributes
 - **Image Formats**:
   - JPEG for all images (optimized quality: 85%)
-  - Thumbnail: 300x300 (square crop)
-  - Small: 600px wide
-  - Medium: 1200px wide
-  - Large: 1920px wide
-  - XLarge: 2880px wide (for retina displays)
+  - High-resolution variants for mobile/retina compatibility:
+    - Thumbnail: 600x1080 (maintains aspect ratio)
+    - Small: 1200x1080 
+    - Medium: 1800x1600
+    - Large: 2400x1800
+    - XLarge: 3200x2400
+  - All sizes maintain aspect ratio (no square cropping)
   - Original: preserved for download
 
 ## Directory Structure
@@ -60,7 +63,8 @@ photos/
 └── scripts/                 # Build scripts
     ├── resize_images.sh
     ├── generate_html.sh
-    └── build.sh
+    ├── build.sh
+    └── deploy_github.sh
 
 ```
 
@@ -92,8 +96,8 @@ Columns:
 - Scan originals/ directory for new images
 - For each image, generate all required sizes using ImageMagick
 - Optimize JPEG quality (85% for web display)
-- Maintain aspect ratios
-- Create square thumbnails with center crop
+- Maintain aspect ratios for all sizes (no square cropping)
+- High-resolution variants ensure mobile/retina compatibility
 
 ### 2. HTML Generation (generate_html.sh)
 - Parse metadata.csv
@@ -118,7 +122,15 @@ Columns:
   2. Runs image resizing
   3. Generates all HTML pages
   4. Copies static assets
-  5. Creates sitemap (optional)
+  5. Creates symlinks for deployment
+
+### 5. GitHub Deployment (deploy_github.sh)
+- Automated deployment to GitHub Pages:
+  1. Copy build files to `../photos_website` (dereferencing symlinks)
+  2. Create descriptive commit with photo/page counts
+  3. Push to GitHub automatically
+- Safety checks for uncommitted changes
+- Proper file permissions for web serving
 
 ## HTML Template Variables
 Templates will use these environment variables:
@@ -169,6 +181,27 @@ Templates will use these environment variables:
 # ARCHITECTURE SUMMARY
 
 ## Current Implementation Status (2025-08-09)
+
+### 🆕 Recent Updates (August 2025)
+
+#### Mobile-Optimized High-Resolution Images
+- **Updated image processing**: All images now generated at much higher resolutions
+- **iPhone compatibility**: Minimum 1080px vertical resolution for all variants  
+- **Removed square cropping**: Gallery now supports mixed aspect ratios naturally
+- **Enhanced mobile experience**: Sharp images on all modern devices including retina displays
+
+#### Minimalist Navigation Design
+- **Simplified navigation**: Removed button styling in favor of clean underlined links
+- **Mobile-responsive layout**: Navigation wraps and centers on mobile devices
+- **Improved accessibility**: Better touch targets and visual hierarchy
+
+#### Automated GitHub Deployment
+- **New deployment script**: `scripts/deploy_github.sh` automates entire deployment process
+- **Symlink handling**: Properly dereferences symlinks during deployment
+- **Automated commits**: Descriptive commit messages with photo/page counts
+- **Safety checks**: Warns about uncommitted changes before deployment
+
+## Implementation Status
 
 This is a **complete, production-ready** static photography portfolio generator built with bash scripts, HTML templates, and minimal JavaScript. The system is fully functional with the following features implemented:
 
@@ -275,9 +308,9 @@ build/ directory (deployable static site)
 - **Flexible schema** - empty fields handled gracefully
 
 #### 4. **Responsive Image Strategy**
-- **5 size variants** cover all common screen sizes and pixel densities
+- **5 high-resolution size variants** optimized for mobile and retina displays
 - **Picture elements** with srcset for optimal loading
-- **Square thumbnails** for consistent gallery grid appearance
+- **Mixed aspect ratios** supported in gallery layout (no forced square cropping)
 
 #### 5. **Tag + Category System**
 - **Categories** for broad grouping (Street, Landscape, etc.)
@@ -295,7 +328,7 @@ build/ directory (deployable static site)
 This is a **static site generator**, not a dynamic web application. The workflow is:
 1. **Content creation**: Add images to `originals/` and update `metadata.csv`
 2. **Build process**: Run `./scripts/build.sh` to generate site
-3. **Deployment**: Copy `build/` directory to web server
+3. **Deployment**: Use `./scripts/deploy_github.sh` for automated GitHub Pages deployment
 
 ### Essential Files to Understand
 
@@ -305,7 +338,8 @@ This is a **static site generator**, not a dynamic web application. The workflow
 2. **`scripts/generate_html.sh`** - Core templating logic, data processing
 3. **`templates/base.html`** - Master page template
 4. **`static/style.css`** - All styling and responsive behavior
-5. **`originals/metadata.csv`** - Content schema and sample data
+5. **`scripts/deploy_github.sh`** - Automated GitHub deployment
+6. **`originals/metadata.csv`** - Content schema and sample data
 
 ### Common Development Tasks
 
@@ -432,3 +466,60 @@ cd build && python3 -m http.server 8000
 - **Static-first architecture** (fundamental design principle)
 
 This codebase prioritizes **simplicity, maintainability, and performance** over complex features. When adding functionality, always ask: "Can this be done with pure HTML/CSS?" before reaching for JavaScript or additional dependencies.
+
+---
+
+# DEPLOYMENT GUIDE
+
+## GitHub Pages Deployment
+
+### Prerequisites
+1. Create a GitHub repository for your portfolio (e.g., `username.github.io` or `portfolio-repo`)
+2. Clone the repository to `../photos_website` relative to this project
+3. Ensure the repository has a configured remote origin
+
+### Automated Deployment
+```bash
+# Build the site
+./scripts/build.sh
+
+# Deploy to GitHub
+./scripts/deploy_github.sh
+```
+
+The deployment script will:
+1. **Copy all build files** to the adjacent `photos_website` repository
+2. **Dereference symlinks** to ensure all images are properly copied
+3. **Create a descriptive commit** with photo/page counts and timestamp
+4. **Push to GitHub** automatically
+5. **Set proper file permissions** for web serving
+
+### Manual Deployment
+If you prefer manual deployment or need to customize the process:
+
+```bash
+# Build the site
+./scripts/build.sh
+
+# Copy files manually (dereferencing symlinks)
+cp -rL build/* ../photos_website/
+
+# Commit and push manually
+cd ../photos_website
+git add .
+git commit -m "Update portfolio - $(date)"
+git push
+```
+
+### Workflow Integration
+The typical development workflow becomes:
+
+1. **Add photos**: Copy new images to `originals/`
+2. **Update metadata**: Edit `originals/metadata.csv` 
+3. **Build**: Run `./scripts/build.sh`
+4. **Test locally**: View at http://localhost:8080 (if server running)
+5. **Deploy**: Run `./scripts/deploy_github.sh`
+6. **Verify**: Check your live site on GitHub Pages
+
+This streamlined workflow enables rapid iteration and deployment of your photography portfolio.
+- memorize when I say "author a git diff" I mean run the git commands and commit a diff.
