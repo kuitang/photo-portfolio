@@ -13,7 +13,7 @@ STATIC_DIR="static"
 CSV_FILE="$ORIGINALS_DIR/metadata.csv"
 
 # Site configuration
-export SITE_TITLE="Kui Tang Photo"
+export SITE_TITLE="kui.tang.photo"
 export BASE_PATH="."
 export CURRENT_YEAR=$(date +%Y)
 
